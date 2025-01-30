@@ -1,6 +1,6 @@
 local my_utility = require("my_utility/my_utility")
 local smoke_grenade = require("spells/smoke_grenade")
-local spell_state = require("spell_state")  -- Füge diese Zeile hinzu
+local spell_state = require("spell_state")
 
 local menu_elements_rain = {
     tree_tab = tree_node:new(1),
@@ -14,22 +14,19 @@ local function menu()
     end
 end
 
-
 local rain_of_arrows_spell_id = 400232
 
--- In rain_of_arrows.lua
 local function logics(entity_list, target_selector_data, best_target)
     if not best_target then return false end
     
-    -- Prüfe spell_state statt undefinierter Variable
-    if not spell_state.barrage_cast then
+    if not spell_state.barrage_cast or spell_state.rain_of_arrows_cast then
         return false
     end
 
     local cast_position = best_target:get_position()
     
     if cast_spell.position(rain_of_arrows_spell_id, cast_position, 1.0) then
-        spell_state.barrage_cast = false -- Reset Barrage Status
+        spell_state.reset_states() -- Hier beide States zurücksetzen
         smoke_grenade.set_loop_complete(true)
         console.print("Rogue Plugin, Casted Rain Of Arrows")
         return true
