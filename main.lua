@@ -178,10 +178,12 @@ on_update(function ()
         max_range = 12.0;
     end
 
+    
+
     local best_target = my_target_selector.get_best_weighted_target(entity_list)
-    local best_target_dist_player_sqr = best_target:get_position():squared_dist_to_ignore_z(local_player:get_position())
-
-
+    if not best_target then
+        return
+    end
 
 
     local spell_id_heartseeker = 363402
@@ -243,140 +245,21 @@ on_update(function ()
 
     glow_target = best_target;
 
+    
+
     local best_target = my_target_selector.get_best_weighted_target(entity_list)
-    local best_target_dist_player_sqr = best_target:get_position():squared_dist_to_ignore_z(local_player:get_position())
-
-    -- Hier beginnt die neue Loop-Logik
-    if spell_state.loop_in_progress then
-        -- Während des Loops nur Barrage und Rain of Arrows erlauben
-        if spells.barrage.logics(best_target) then
-            cast_end_time = current_time + 0.6;
-            return;
-        end;
-
-        if spells.rain_of_arrows.logics(entity_list, target_selector_data, best_target) then
-            cast_end_time = current_time + 0.6;
-            spell_state.loop_in_progress = false; -- Loop beenden nach Rain of Arrows
-            return;
-        end;
-    else
-        -- Wenn kein Loop aktiv ist, normale Spell-Reihenfolge
-        -- Start mit Barrage möglich
-        if spells.barrage.logics(best_target) then
-            cast_end_time = current_time + 0.6;
-            spell_state.loop_in_progress = true; -- Loop starten
-            return;
-        end;
-
-        -- Andere Skills nur wenn kein Loop läuft
-        if spells.smoke_grenade.logics(entity_list, target_selector_data, best_target) then
-            cast_end_time = current_time + 0.4;
-            spell_state.reset_states(); -- Loop-Status zurücksetzen
-            return;
-        end;
-
-        if spells.concealment.logics() then
-            cast_end_time = current_time + 0.4;
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.shadow_clone.logics(closest_target) then
-            cast_end_time = current_time + 0.4;
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.death_trap.logics(entity_list, target_selector_data, best_target) then
-            cast_end_time = current_time + 0.4;
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.poison_trap.logics(entity_list, target_selector_data, best_target) then
-            cast_end_time = current_time + 0.4;
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.shadow_imbuement.logics() then
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.dance_of_knives.logics() then
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.poison_imbuement.logics() then
-            spell_state.reset_states();
-            return;
-        end;
-
-        if spells.cold_imbuement.logics() then
-            spell_state.reset_states();
-            return;
-        end;
-
-        if not is_heartseeker_exception then
-            if spells.shadow_step.logics(entity_list, target_selector_data, best_target, closest_target)then
-                cast_end_time = current_time + 0.4;
-                return;
-            end
-        
-            if spells.dash.logics(closest_target)then
-                cast_end_time = current_time + 0.4;
-                return;
-            end;
-        
-            if spells.caltrop.logics(entity_list, target_selector_data, closest_target)then
-                cast_end_time = current_time + 0.4;
-                return;
-            end;
-        
-            if spells.dark_shroud.logics()then
-                cast_end_time = current_time + 0.4;
-                return;
-            end;
-        end
-    
-        if spells.twisting_blade.logics(best_target)then
-            cast_end_time = current_time + 0.2;
-            return;
-        end;
-    
-        if spells.rapid_fire.logics(best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-    
-        if spells.flurry.logics(best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-    
-        if spells.penetrating_shot.logics(entity_list, target_selector_data, best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-    
-        if spells.invigorating_strike.logics(best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-    
-        if spells.blade_shift.logics(best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-    
-        if spells.forcefull_arrow.logics(best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-
+    if not best_target then
+        return
     end
+
+    local best_target_position = best_target:get_position()
+    if not best_target_position then
+        return
+    end
+
+    local best_target_dist_player_sqr = best_target_position:squared_dist_to_ignore_z(player_position)
+
+    
 
     if distance_sqr > (max_range * max_range) then            
         best_target = target_selector_data.closest_unit;
@@ -386,6 +269,177 @@ on_update(function ()
             return;
         end
     end
+
+    if best_target_dist_player_sqr > (max_range * max_range) then            
+        best_target = target_selector_data.closest_unit
+        if not best_target then
+            return
+        end
+        
+        local closer_pos = best_target:get_position()
+        if not closer_pos then
+            return
+        end
+        
+        local distance_sqr_2 = closer_pos:squared_dist_to_ignore_z(player_position)
+        if distance_sqr_2 > (max_range * max_range) then
+            return
+        end
+    end
+
+    local current_time = get_time_since_inject()
+
+    -- Hier beginnt die neue Loop-Logik
+    if spell_state.loop_in_progress then
+        -- Während des Loops nur Barrage und Rain of Arrows erlauben
+        if spells.barrage.logics(best_target) then
+            cast_end_time = current_time + 0.6
+            spell_state.barrage_cast = true
+            return
+        end
+    
+        if spell_state.barrage_cast and spells.rain_of_arrows.logics(entity_list, target_selector_data, best_target) then
+            cast_end_time = current_time + 0.6
+            spell_state.reset_states() -- Setzt alle States zurück
+            return
+        end
+    else
+        if current_time - spell_state.last_loop_end_time < 1.0 then -- Wenn kein Loop aktiv ist, normale Spell-Reihenfolge
+            -- Start mit Barrage möglich
+            if spells.barrage.logics(best_target) then
+                cast_end_time = current_time + 0.6;
+                spell_state.loop_in_progress = true; -- Loop starten
+                return;
+            end
+
+            -- Andere Skills nur wenn kein Loop läuft
+            if spells.smoke_grenade.logics(entity_list, target_selector_data, best_target) then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states(); -- Loop-Status zurücksetzen
+                return;
+            end
+
+            if spells.concealment.logics() then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.shadow_clone.logics(closest_target) then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.death_trap.logics(entity_list, target_selector_data, best_target) then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.poison_trap.logics(entity_list, target_selector_data, best_target) then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.shadow_imbuement.logics() then
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.dance_of_knives.logics() then
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.poison_imbuement.logics() then
+                spell_state.reset_states();
+                return;
+            end
+
+            if spells.dash.logics(closest_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end;
+
+            if spells.cold_imbuement.logics() then
+                spell_state.reset_states();
+                return;
+            end
+
+            if not is_heartseeker_exception then
+                if spells.shadow_step.logics(entity_list, target_selector_data, best_target, closest_target)then
+                    cast_end_time = current_time + 0.4;
+                    spell_state.reset_states();
+                    return;
+                end
+        
+                if spells.dash.logics(closest_target)then
+                    cast_end_time = current_time + 0.4;
+                    spell_state.reset_states();
+                    return;
+                end;
+        
+                if spells.caltrop.logics(entity_list, target_selector_data, closest_target)then
+                    cast_end_time = current_time + 0.4;
+                    spell_state.reset_states();
+                    return;
+                end;
+        
+                if spells.dark_shroud.logics()then
+                    cast_end_time = current_time + 0.4;
+                    spell_state.reset_states();
+                    return;
+                end
+            end
+    
+            if spells.twisting_blade.logics(best_target)then
+                cast_end_time = current_time + 0.2;
+                spell_state.reset_states();
+                return;
+            end
+    
+            if spells.rapid_fire.logics(best_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+    
+            if spells.flurry.logics(best_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+    
+            if spells.penetrating_shot.logics(entity_list, target_selector_data, best_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+    
+            if spells.invigorating_strike.logics(best_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+    
+            if spells.blade_shift.logics(best_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+    
+            if spells.forcefull_arrow.logics(best_target)then
+                cast_end_time = current_time + 0.4;
+                spell_state.reset_states();
+                return;
+            end
+        end
+    end
+
+    
 
     
 
