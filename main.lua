@@ -86,48 +86,15 @@ on_render_menu (function ()
 end
 )
 
--- local t = get_gametime()
--- on_update(function ()
---     local local_player = get_local_player()
---     if not local_player then
---         return
---     end
-
---     if get_gametime() - t > 0.5 then
---         local active_spell_id = local_player:get_active_spell_id()
-
---         if active_spell_id > 0 then
---             console.print("Active Spell ID: ".. active_spell_id)
---         end
-
---         t = get_gametime()
---     end
--- end)
-
--- on_render(function()
---     local x = vec3.new(-857.631714, 383.320801, 14.093664)
---     graphics.circle_3d(x, 1, color_white(85), 3.5, 144)
--- end)
-
 on_key_release(function(key)
-    -- local combo_points = get_local_player():get_rogue_combo_points()
-    -- console.print("combo_points " .. combo_points)
-
-    -- local player_name = get_local_player_name()
-    -- console.print("player_name " .. player_name)
-
     if key ~= 4 or true  then
         return
     end
     
-    -- cast_spell.position(1283121, get_player_position(), 0.5)
-    -- console.print("1111111")
-    -- exploit attempt, wip
     local spell_id_shadow_step = 355606;
     local cast_position = get_cursor_position()
     local actors = actors_manager.get_all_actors()
 
-    -- sorting actors by distance to the local player
     local player_position = get_player_position()
     table.sort(actors, function(a, b)
         return a:get_position():squared_dist_to_ignore_z(cast_position) <
@@ -136,18 +103,11 @@ on_key_release(function(key)
 
     local_player = get_local_player()
 
-    -- now interact with the actors in order of proximity
     for _, actor in ipairs(actors) do
         if not actor:is_basic_particle() and actor ~= local_player and actor:get_position():squared_dist_to_ignore_z(cast_position) < (8.0 * 8.0) then
             cast_spell.target(actor, spell_id_shadow_step, 0.5, false)
         end
     end
-
-    -- trying to find helltide stacks, tmp code, wip
-    -- console.print("111")
-    -- for index, value in ipairs(local_player:get_consumable_items()) do
-    --     console.print("item name " .. value:get_skin_name())
-    -- end
 
 end);
 
@@ -170,11 +130,7 @@ on_update(function ()
         return;
     end
 
-    -- local cinders = get_helltide_coin_cinders()
-    -- console.print("cinders " .. cinders)
-
     if menu.main_boolean:get() == false then
-        -- if plugin is disabled dont do any logic
         return;
     end;
 
@@ -209,16 +165,13 @@ on_update(function ()
         return;
     end
 
-    -- local hearts = get_helltide_coin_hearts()
-    -- console.print("hearts " .. hearts)
     local is_auto_play_active = auto_play.is_active();
     local max_range = 26.0;
     local mode_id = menu.mode:get()
-    if mode_id <= 0 then -- is melee
+    if mode_id <= 0 then
         max_range = 7.0;
     end
     local is_ranged =  mode_id >= 1
-
 
     if is_auto_play_active then
         max_range = 12.0;
@@ -233,7 +186,7 @@ on_update(function ()
     if is_heartseeker_build then
 
         local is_vulnerable = best_target:is_vulnerable()
-        if is_vulnerable  then -- and best_target_dist_player_sqr > (4.0 * 4.0)
+        if is_vulnerable then
             is_best_target_exception = true
         end
 
@@ -254,15 +207,11 @@ on_update(function ()
 
     local closest_target = target_selector_data.closest_unit;
     if is_ranged  and menu.dash_cooldown:get() > 0 and not is_heartseeker_exception then
-        -- utility.is_spell_ready(337031)
-        -- console.print("current_time - global_poison_trap_last_cast_time " .. current_time - global_poison_trap_last_cast_time)
         if current_time - global_poison_trap_last_cast_time > 1.20 and current_time - global_poison_trap_last_cast_time < 2.20 and global_poison_trap_last_cast_position:squared_dist_to_ignore_z(player_position) < (3.30 * 3.30) then
-            -- evade exception for ranged
             if cast_spell.position(337031, player_position:get_extended(global_poison_trap_last_cast_position, -4.0), 0.00)then
                 global_poison_trap_last_cast_time = 0.0
                 global_poison_trap_last_cast_position = nil
                 console.print("Rouge Plugin, Casted evade ranged EXCEPTION EXCEPTION EXCEPTION EXCEPTION ");
-                -- return;
             end
         end
 
@@ -278,7 +227,6 @@ on_update(function ()
                 if cast_spell.position(337031, player_position:get_extended(closest_target:get_position(), -4.0), 0.00)then
                     last_dash_cast_time = current_time
                     console.print("Rouge Plugin, Casted evade ranged on melees");
-                    -- return;
                 end
             end
         end
@@ -289,7 +237,6 @@ on_update(function ()
         return;
     end
 
-    -- will be used in render
     glow_target = best_target;
 
     local best_target_position = best_target:get_position();
@@ -303,6 +250,23 @@ on_update(function ()
         end
     end
 
+    -- Neue Reihenfolge der Zauber
+    if spells.barrage.logics(best_target) then
+        cast_end_time = current_time + 0.6;
+        return;
+    end;
+
+    if spells.rain_of_arrows.logics(entity_list, target_selector_data, best_target) then
+        cast_end_time = current_time + 0.1;
+        return;
+    end;
+
+    if spells.smoke_grenade.logics(entity_list, target_selector_data, best_target) then
+        cast_end_time = current_time + 0.4;
+        return;
+    end;
+
+    -- Rest der Zauber bleibt in ursprünglicher Reihenfolge
     if spells.concealment.logics() then
         cast_end_time = current_time + 0.4;
         return;
@@ -321,30 +285,21 @@ on_update(function ()
     if spells.poison_trap.logics(entity_list, target_selector_data, best_target) then
         cast_end_time = current_time + 0.4;
         return;
-    end
-
-    if spells.rain_of_arrows.logics(entity_list, target_selector_data, best_target) then
-        cast_end_time = current_time + 0.1;
-        return;
     end;
 
     if spells.shadow_imbuement.logics()then
-        -- cast_end_time = current_time + 0.4;
         return;
     end;
 
     if spells.dance_of_knives.logics()then
-        -- cast_end_time = current_time + 0.4;
         return;
     end;
 
     if spells.poison_imbuement.logics()then
-        -- cast_end_time = current_time + 0.4;
         return;
     end;
 
     if spells.cold_imbuement.logics()then
-        -- cast_end_time = current_time + 0.4;
         return;
     end;
 
@@ -364,11 +319,6 @@ on_update(function ()
             return;
         end;
     
-        if spells.smoke_grenade.logics(entity_list, target_selector_data, best_target)then
-            cast_end_time = current_time + 0.4;
-            return;
-        end;
-    
         if spells.dark_shroud.logics()then
             cast_end_time = current_time + 0.4;
             return;
@@ -377,11 +327,6 @@ on_update(function ()
 
     if spells.twisting_blade.logics(best_target)then
         cast_end_time = current_time + 0.2;
-        return;
-    end;
-
-    if spells.barrage.logics(best_target)then
-        cast_end_time = current_time + 0.6;
         return;
     end;
 
@@ -416,11 +361,6 @@ on_update(function ()
     end;
 
     local heartseeker_spell_cast_delay = spells.heartseeker.menu_elements_heartseeker_base.spell_cast_delay:get()
-    -- if spells.heartseeker.logics(best_target)then
-    --     last_heartseeker_cast_time = current_time
-    --     cast_end_time = current_time + heartseeker_spell_cast_delay;
-    --     return;
-    -- end;
 
     if spells.puncture.logics(best_target)then
         cast_end_time = current_time + 0.1;
@@ -428,7 +368,6 @@ on_update(function ()
     end;
 
     if is_heartseeker_exception then
-        -- console.print("is_heartseeker_exception - going to pause evade")
         local is_boss = false
         for index, value in ipairs(entity_list) do
             if value:is_boss() then
@@ -441,29 +380,24 @@ on_update(function ()
             evade.set_pause(0.2)
         end
     end
-    -- if current_time - last_heartseeker_cast_time > heartseeker_spell_cast_delay + 0.100 then
-        -- Sort the entity list by weight
-        table.sort(entity_list, function(a, b)
-            return my_target_selector.get_unit_weight(a) > my_target_selector.get_unit_weight(b)
-        end)
-    
-        -- Try to cast Heartseeker on each unit until one cast is successful
-        for _, unit in ipairs(entity_list) do
-            if spells.heartseeker.logics(unit) then
-                last_heartseeker_cast_time = current_time  -- Update the last cast time when cast is successful
-                cast_end_time = current_time + heartseeker_spell_cast_delay
-                console.print("Heartseeker BACKUP cast on unit with ID: " .. tostring(unit:get_id()))
-                return
-            end
-        end
-    -- end
 
-    -- auto play engage far away monsters
+    table.sort(entity_list, function(a, b)
+        return my_target_selector.get_unit_weight(a) > my_target_selector.get_unit_weight(b)
+    end)
+
+    for _, unit in ipairs(entity_list) do
+        if spells.heartseeker.logics(unit) then
+            last_heartseeker_cast_time = current_time
+            cast_end_time = current_time + heartseeker_spell_cast_delay
+            console.print("Heartseeker BACKUP cast on unit with ID: " .. tostring(unit:get_id()))
+            return
+        end
+    end
+
     local move_timer = get_time_since_inject()
     if move_timer < can_move then
         return;
     end;
-
 
     local is_auto_play = my_utility.is_auto_play_enabled();
     if is_auto_play then
@@ -472,23 +406,11 @@ on_update(function ()
         if not is_dangerous_evade_position then
             local closer_target = target_selector.get_target_closer(player_position, 15.0);
             if closer_target then
-                -- if is_blood_mist then
-                --     local closer_target_position = closer_target:get_position();
-                --     local move_pos = closer_target_position:get_extended(player_position, -5.0);
-                --     if pathfinder.move_to_cpathfinder(move_pos) then
-                --         cast_end_time = current_time + 0.40;
-                --         can_move = move_timer + 1.50;
-                --         --console.print("auto play move_to_cpathfinder - 111")
-                --     end
-                -- else
-                    local closer_target_position = closer_target:get_position();
-                    local move_pos = closer_target_position:get_extended(player_position, 4.0);
-                    if pathfinder.move_to_cpathfinder(move_pos) then
-                        can_move = move_timer + 1.50;
-                        --console.print("auto play move_to_cpathfinder - 222")
-                    end
-                -- end
-                
+                local closer_target_position = closer_target:get_position();
+                local move_pos = closer_target_position:get_extended(player_position, 4.0);
+                if pathfinder.move_to_cpathfinder(move_pos) then
+                    can_move = move_timer + 1.50;
+                end
             end
         end
     end
@@ -527,12 +449,10 @@ on_render(function ()
         local position = obj:get_position();
         local distance_sqr = position:squared_dist_to_ignore_z(player_position);
         local is_close = distance_sqr < (8.0 * 8.0);
-            -- if is_close then
-                graphics.circle_3d(position, 1, color_white(100));
+            graphics.circle_3d(position, 1, color_white(100));
 
-                local future_position = prediction.get_future_unit_position(obj, 0.4);
-                graphics.circle_3d(future_position, 0.5, color_yellow(100));
-            -- end;
+            local future_position = prediction.get_future_unit_position(obj, 0.4);
+            graphics.circle_3d(future_position, 0.5, color_yellow(100));
         end;
     end
 
@@ -544,14 +464,10 @@ on_render(function ()
         local glow_target_position = glow_target:get_position();
         local glow_target_position_2d = graphics.w2s(glow_target_position);
         if not glow_target_position_2d:is_zero() then
-
             graphics.line(glow_target_position_2d, player_screen_position, color_red(180), 2.5)
             graphics.circle_3d(glow_target_position, 0.80, color_red(200), 2.0);
         end
-       
-
     end
-
 
 end);
 
