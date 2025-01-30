@@ -1,4 +1,18 @@
 local my_utility = require("my_utility/my_utility")
+local spell_state = require("spell_state")  -- Füge diese Zeile hinzu
+
+local menu_elements_smoke = {
+    tree_tab = tree_node:new(1),
+    main_boolean = checkbox:new(true, get_hash(my_utility.plugin_label .. "smoke_grenade_base_main_bool")),
+}
+
+local function menu()
+    if menu_elements_smoke.tree_tab:push("Smoke Grenade") then
+        menu_elements_smoke.main_boolean:render("Enable Spell", "")
+        menu_elements_smoke.tree_tab:pop()
+    end
+end
+
 
 -- Timing und Status Variablen
 local next_time_allowed_cast = 0.0
@@ -6,9 +20,6 @@ local smoke_grenade_cooldown = 4.0
 local last_smoke_grenade_cast = 0.0
 local barrage_rain_loop_complete = true
 
-local function menu()
-    -- Menu kann bleiben wie es ist
-end
 
 local spell_id_smoke_grenade = 356162
 
