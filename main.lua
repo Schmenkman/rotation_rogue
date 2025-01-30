@@ -323,8 +323,8 @@ on_update(function ()
         return;
     end
 
-    if spells.rain_of_arrows.logics(best_target)then
-        cast_end_time = current_time + 1.5;
+    if spells.rain_of_arrows.logics(entity_list, target_selector_data, best_target) then
+        cast_end_time = current_time + 0.1;
         return;
     end;
 

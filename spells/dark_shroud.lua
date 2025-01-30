@@ -50,23 +50,6 @@ local function logics()
         return false;
     end;
 
-    local has_shroud = false
-
-    local buffs = local_player:get_buffs()
-    if buffs then
-        for i, buff in ipairs(buffs) do
-            local buff_hash = buff.name_hash
-            if buff_hash == 786383 then
-                has_shroud = true
-                break
-            end
-        end
-    end
-
-    if has_shroud then
-        return false
-    end
-
     if cast_spell.self(spell_id_dark_shroud, 0.0) then
         
         local current_time = get_time_since_inject();
