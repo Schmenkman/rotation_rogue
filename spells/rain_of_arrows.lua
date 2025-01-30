@@ -19,6 +19,7 @@ local rain_of_arrows_spell_id = 400232
 local function logics(entity_list, target_selector_data, best_target)
     if not best_target then return false end
     
+    -- Rain of Arrows nur casten wenn Barrage aktiv ist (also vorher gecastet wurde)
     if not spell_state.barrage_cast or spell_state.rain_of_arrows_cast then
         return false
     end
@@ -26,7 +27,8 @@ local function logics(entity_list, target_selector_data, best_target)
     local cast_position = best_target:get_position()
     
     if cast_spell.position(rain_of_arrows_spell_id, cast_position, 1.0) then
-        spell_state.reset_states() -- Hier beide States zurücksetzen
+        spell_state.barrage_cast = false      -- Barrage für den nächsten Cast vorbereiten
+        spell_state.rain_of_arrows_cast = false  -- Rain of Arrows zurücksetzen
         smoke_grenade.set_loop_complete(true)
         console.print("Rogue Plugin, Casted Rain Of Arrows")
         return true

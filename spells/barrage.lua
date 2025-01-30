@@ -29,13 +29,15 @@ local spell_data_barrage = spell_data:new(
 local function logics(target)
     if not target then return false end
     
-    -- Cast Barrage nur wenn der vorherige Zyklus abgeschlossen ist
+    -- Barrage nur casten wenn Rain of Arrows NICHT aktiv ist und Barrage auch nicht aktiv ist
     if spell_state.rain_of_arrows_cast or spell_state.barrage_cast then
         return false
     end
     
     if cast_spell.target(target, spell_data_barrage, false) then
         spell_state.barrage_cast = true
+        spell_state.rain_of_arrows_cast = false
+        spell_state.loop_in_progress = true -- Loop-Status setzen
         spell_state.last_cast_time = get_time_since_inject()
         console.print("Rogue, Casted Barrage")
         return true
